@@ -68,7 +68,9 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-
+        $success = Product::create($request->all());
+        if($success)echo 1;
+        Session::flash('success', 'Data stored successfully');
     }
 
 
