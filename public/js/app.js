@@ -2267,6 +2267,10 @@ __webpack_require__.r(__webpack_exports__);
     InputTag: vue_input_tag__WEBPACK_IMPORTED_MODULE_2___default.a
   },
   props: {
+    base_url: {
+      type: String,
+      required: true
+    },
     variants: {
       type: Array,
       required: true
@@ -2361,7 +2365,7 @@ __webpack_require__.r(__webpack_exports__);
         product_image: this.images,
         product_variant_prices: this.product_variant_prices
       };
-      axios.put('/mediusware/public/product/' + this.product.id, product).then(function (response) {
+      axios.put(this.base_url.url + '/product/' + this.product.id, product).then(function (response) {
         console.log(response.data);
 
         if (response.data == 1) {
@@ -2377,7 +2381,7 @@ __webpack_require__.r(__webpack_exports__);
     this.product_sku = this.product.sku;
     this.description = this.product.description;
     this.product_variant_prices = this.product_variants;
-    console.log(this.product_variant_prices);
+    console.log(this.base_url);
   }
 });
 

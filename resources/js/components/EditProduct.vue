@@ -129,6 +129,10 @@ export default {
         InputTag
     },
     props: {
+        base_url:{
+            type: String,
+            required: true
+        },
         variants: {
             type: Array,
             required: true
@@ -217,7 +221,7 @@ export default {
                 product_image: this.images,
                 product_variant_prices: this.product_variant_prices
             }
-            axios.put('/mediusware/public/product/'+this.product.id, product).then(response => {
+            axios.put(this.base_url.url+'/product/'+this.product.id, product).then(response => {
 
                 console.log(response.data);
 
@@ -236,7 +240,7 @@ export default {
         this.product_variant_prices = this.product_variants;
 
 
-        console.log(this.product_variant_prices);
+        console.log(this.base_url);
         
     }
 }
