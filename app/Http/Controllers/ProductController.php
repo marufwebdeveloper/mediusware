@@ -18,9 +18,10 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $perpage = 3;
 
-        $data['products'] = Product::orderBy('id','desc')->paginate($perpage);
+
+        $perpage = 3;
+        $data['products'] = $this->SearchProduct()?:Product::orderBy('id','desc')->paginate($perpage);
         $data['products_count'] = Product::count();
         $data['productper_page'] = $perpage; 
 
@@ -35,6 +36,14 @@ class ProductController extends Controller
             $return[$data->product_id][] = $data;
             return $return;
        });
+
+        
+        $variants = DB::Select("SELECT product_variants.id,variant,variants.title from product_variants left join variants on variants.id=product_variants.variant_id WHERE product_variants.id in ( SELECT DISTINCT product_variant_one FROM product_variant_prices UNION SELECT DISTINCT product_variant_two FROM product_variant_prices UNION SELECT DISTINCT product_variant_three FROM product_variant_prices) ");
+
+        $data['variants'] = array_reduce($variants,function($return,$data){
+            $return["'".$data->title."'"][] = $data;
+            return $return;
+        });
 
         return view('products.index',$data);
     }
@@ -107,4 +116,54 @@ class ProductController extends Controller
     {
         //
     }
+
+
+
+
+    private function SearchProduct(){
+        $title = request()->title;
+        $variant = request()->variant;
+        $price_from = request()->price_from;
+        $price_to = request()->price_to;
+        $date = request()->date;        
+        $atleastonce = false;
+
+        $getProductId = DB::table("products");
+
+        if(($price_from && $price_to) || $variant){
+            $getProductId->leftJoin("product_variant_prices","product_variant_prices.product_id","products.id");
+            $getProductId->leftJoin('product_variants as variant_one','variant_one.id','product_variant_prices.product_variant_one')
+            ->leftJoin('product_variants as variant_two','variant_two.id','product_variant_prices.product_variant_two')
+            ->leftJoin('product_variants as variant_three','variant_three.id','product_variant_prices.product_variant_three');
+            if(($price_from && $price_to))
+            $getProductId->whereBetween('price',[$price_from,$price_to]);
+            $getProductId->where(function ($query) use ($variant) {
+                $query->where('product_variant_one', '=', $variant)
+                      ->orWhere('product_variant_two', '=', $variant)
+                      ->orWhere('product_variant_three', '=', $variant);
+            });
+            $atleastonce = true;
+        }
+
+        if($title){
+            $getProductId->where('title','like',"%$title%");
+            $atleastonce = true;
+        }
+        if($date){
+            $getProductId->where(DB::raw('DATE(products.created_at)'),$date);
+            $atleastonce = true;
+        }
+        if($atleastonce){
+            $getProductId = $getProductId->select(DB::raw("Distinct products.id"))->get();
+            $ids = array_column($getProductId->toArray(),'id');
+            return DB::table('products')->whereIn('id',$ids)->get();
+        }
+        
+    }
+
+
+
+
+
+
 }
