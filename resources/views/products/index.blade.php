@@ -42,7 +42,7 @@
                 <table class="table">
                     <thead>
                     <tr>
-                        <th>#</th>
+                        <th>SL</th>
                         <th>Title</th>
                         <th>Description</th>
                         <th>Variant</th>
@@ -52,7 +52,38 @@
 
                     <tbody>
 
-                    <tr>
+                       @foreach($products as $k=>$p)
+
+                        <tr>
+                            <td>{{++$k}}</td>
+                            <td>{{$p->title}}</td>
+                            <td style="max-width: 200px">{{$p->description}}</td>
+                            <td>
+                                @if(isset($product_variants[$p->id]))
+                                @foreach($product_variants[$p->id] as $v)
+                                <p>
+                                    <span>{{$v->variant_one}}</span>
+                                    <span>/</span>
+                                    <span>{{$v->variant_two}}</span>
+                                    <span>/</span>
+                                    <span>{{$v->variant_three}}</span>
+                                    <span style="margin: 0 5px;padding:0 5px;border: 1px solid #ddd">price:{{$v->price}}</span>
+                                    <span style="margin: 0 5px;padding: 0 5px;border: 1px solid #ddd">InStock:{{$v->stock}}</span>
+                                    
+                                </p>
+                                @endforeach
+                                @endif
+
+                            </td>
+                            <td>
+                                <a href="{{route('product.edit',$p->id)}}" class="btn btn-primary">Edit</a>
+                            </td>
+                            
+                        </tr>
+
+                       @endforeach
+
+                    <!-- <tr>
                         <td>1</td>
                         <td>T-Shirt <br> Created at : 25-Aug-2020</td>
                         <td>Quality product in low cost</td>
@@ -76,11 +107,12 @@
                                 <a href="{{ route('product.edit', 1) }}" class="btn btn-success">Edit</a>
                             </div>
                         </td>
-                    </tr>
+                    </tr> -->
 
                     </tbody>
 
                 </table>
+                {{ $products->links() }}
             </div>
 
         </div>
@@ -88,7 +120,17 @@
         <div class="card-footer">
             <div class="row justify-content-between">
                 <div class="col-md-6">
-                    <p>Showing 1 to 10 out of 100</p>
+                    <p>
+                        @php
+                        $curPage = app('request')->input('page')??1;
+                        $start = (((int)$curPage-1)*(int)$productper_page)+1;;
+                        $end = (int)$curPage*(int)$productper_page;
+                        $end = $products_count<$end?$products_count:$end;
+                        @endphp
+
+                        Showing {{$start}} to {{$end}} out of
+                        {{$products_count}}
+                    </p>
                 </div>
                 <div class="col-md-2">
 
