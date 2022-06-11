@@ -6,6 +6,10 @@
         <h1 class="h3 mb-0 text-gray-800">Products</h1>
     </div>
 
+    @if(Session::has('success'))
+<p class="alert {{ Session::get('alert-class', 'alert-info') }}">{{ Session::get('success') }}</p>
+@endif
+
 
     <div class="card">
         <form action="{{route('product.index')}}" method="get" class="card-header">

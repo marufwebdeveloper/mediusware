@@ -8,6 +8,7 @@ use App\Models\ProductVariantPrice;
 use App\Models\Variant;
 use Illuminate\Http\Request;
 use DB;
+use Session;
 
 class ProductController extends Controller
 {
@@ -91,7 +92,24 @@ class ProductController extends Controller
     public function edit(Product $product)
     {
         $variants = Variant::all();
-        return view('products.edit', compact('variants'));
+        $product_variant = DB::table('product_variant_prices')
+        ->leftJoin('product_variants as variant_one','variant_one.id','product_variant_prices.product_variant_one')
+        ->leftJoin('product_variants as variant_two','variant_two.id','product_variant_prices.product_variant_two')
+        ->leftJoin('product_variants as variant_three','variant_three.id','product_variant_prices.product_variant_three') 
+        ->where('product_variant_prices.product_id',$product->id)
+        ->select('product_variant_prices.*',
+            'variant_one.variant as variant_one',
+            'variant_two.variant as variant_two',
+            'variant_three.variant as variant_three',
+            'variant_one.variant_id as variant_id_one',
+            'variant_two.variant_id as variant_id_two',
+            'variant_three.variant_id as variant_id_three'
+        )
+        ->get(); 
+        $variant_details = DB::table('product_variants')
+        ->get(); 
+        
+        return view('products.edit', compact('variants','product','product_variant','variant_details'));
     }
 
     /**
@@ -101,9 +119,28 @@ class ProductController extends Controller
      * @param \App\Models\Product $product
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Product $product)
+    public function update(Request $request, $product_id)
     {
-        //
+        $success = Product::where('id', $product_id)
+        ->update([
+            'title' => $request['title'],
+            'sku' => $request['sku'],
+            'description' => $request['description']
+        ]);
+
+        foreach ($request['product_variant_prices'] as $key => $value) {
+            DB::table('product_variant_prices')
+            ->where('id', $value['id'])
+            ->update([
+                'product_variant_one' => $value['product_variant_one'],
+                'product_variant_two' => $value['product_variant_two'],
+                'product_variant_three' => $value['product_variant_three'],
+                'price' => $value['price'],
+                'stock' => $value['stock']                
+            ]);
+        }
+        echo $success;
+        Session::flash('success', 'Data updated successfully');
     }
 
     /**
