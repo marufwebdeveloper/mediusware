@@ -2012,6 +2012,32 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 
 
 
@@ -2028,6 +2054,10 @@ __webpack_require__.r(__webpack_exports__);
     variants: {
       type: Array,
       required: true
+    },
+    variant_details: {
+      type: Object,
+      required: true
     }
   },
   data: function data() {
@@ -2042,16 +2072,37 @@ __webpack_require__.r(__webpack_exports__);
       }],
       product_variant_prices: [],
       dropzoneOptions: {
-        url: 'https://httpbin.org/post',
+        url: this.base_url.url + '/product-image-upload',
         thumbnailWidth: 150,
         maxFilesize: 0.5,
         headers: {
-          "My-Awesome-Header": "header value"
-        }
-      }
+          "X-CSRF-TOKEN": document.head.querySelector("[name=csrf-token]").content
+        },
+        addRemoveLinks: true
+      },
+      validation_errors: []
     };
   },
   methods: {
+    vdropzone_complete: function vdropzone_complete(response) {
+      if (response && response.xhr.response) {
+        this.images.push(response.xhr.response);
+      }
+    },
+    vdropzone_removed_file: function vdropzone_removed_file(a, b, c) {
+      var image_name = '';
+
+      if (a.xhr) {
+        image_name = a.xhr.response;
+      } else if (a.name) {
+        image_name = a.name;
+      }
+
+      if (image_name) {
+        var index = this.images.indexOf(image_name);
+        this.images.splice(index, 1);
+      }
+    },
     // it will push a new object into product variant
     newVariant: function newVariant() {
       var all_variants = this.variants.map(function (el) {
@@ -2104,6 +2155,8 @@ __webpack_require__.r(__webpack_exports__);
     },
     // store product into database
     saveProduct: function saveProduct() {
+      var _this2 = this;
+
       var product = {
         title: this.product_name,
         sku: this.product_sku,
@@ -2116,15 +2169,32 @@ __webpack_require__.r(__webpack_exports__);
         console.log(response.data);
 
         if (response.data == 1) {
-          window.location.href = "/mediusware/public/product";
+          window.location.href = _this2.base_url.url + '/product';
         }
       })["catch"](function (error) {
-        console.log(error);
+        if (error.response && error.response.data && error.response.data.errors) {
+          _this2.validation_errors = error.response.data.errors;
+        }
+      });
+    },
+    addVarient: function addVarient() {
+      this.product_variant_prices.push({
+        price: '',
+        product_variant_one: '',
+        product_variant_three: '',
+        product_variant_two: '',
+        stock: '',
+        variant_id_one: '',
+        variant_id_three: '',
+        variant_id_two: ''
       });
     }
   },
   mounted: function mounted() {
-    console.log('Component mounted.');
+    //console.log('Component mounted.')
+    setTimeout(function () {
+      console.clear();
+    }, 1000);
   }
 });
 
@@ -2464,8 +2534,9 @@ __webpack_require__.r(__webpack_exports__);
     this.description = this.product.description;
     this.product_variant_prices = this.product_variants;
     this.images = this.parseImages();
-    console.log(this.base_url);
-    console.log(this.base_url.url + '/product/' + this.product.id);
+    setTimeout(function () {
+      console.clear();
+    }, 1000);
   }
 });
 
@@ -50848,7 +50919,13 @@ var render = function() {
                     _vm.product_name = $event.target.value
                   }
                 }
-              })
+              }),
+              _vm._v(" "),
+              _vm.validation_errors.title
+                ? _c("p", { class: ["text-danger"] }, [
+                    _vm._v(_vm._s(_vm.validation_errors.title[0]))
+                  ])
+                : _vm._e()
             ]),
             _vm._v(" "),
             _c("div", { staticClass: "form-group" }, [
@@ -50874,7 +50951,13 @@ var render = function() {
                     _vm.product_sku = $event.target.value
                   }
                 }
-              })
+              }),
+              _vm._v(" "),
+              _vm.validation_errors.sku
+                ? _c("p", { class: ["text-danger"] }, [
+                    _vm._v(_vm._s(_vm.validation_errors.sku[0]))
+                  ])
+                : _vm._e()
             ]),
             _vm._v(" "),
             _c("div", { staticClass: "form-group" }, [
@@ -50914,7 +50997,11 @@ var render = function() {
             [
               _c("vue-dropzone", {
                 ref: "myVueDropzone",
-                attrs: { id: "dropzone", options: _vm.dropzoneOptions }
+                attrs: { id: "dropzone", options: _vm.dropzoneOptions },
+                on: {
+                  "vdropzone-complete": _vm.vdropzone_complete,
+                  "vdropzone-removed-file": _vm.vdropzone_removed_file
+                }
               })
             ],
             1
@@ -50924,123 +51011,6 @@ var render = function() {
       _vm._v(" "),
       _c("div", { staticClass: "col-md-6" }, [
         _c("div", { staticClass: "card shadow mb-4" }, [
-          _vm._m(1),
-          _vm._v(" "),
-          _c(
-            "div",
-            { staticClass: "card-body" },
-            _vm._l(_vm.product_variant, function(item, index) {
-              return _c("div", { staticClass: "row" }, [
-                _c("div", { staticClass: "col-md-4" }, [
-                  _c("div", { staticClass: "form-group" }, [
-                    _c("label", { attrs: { for: "" } }, [_vm._v("Option")]),
-                    _vm._v(" "),
-                    _c(
-                      "select",
-                      {
-                        directives: [
-                          {
-                            name: "model",
-                            rawName: "v-model",
-                            value: item.option,
-                            expression: "item.option"
-                          }
-                        ],
-                        staticClass: "form-control",
-                        on: {
-                          change: function($event) {
-                            var $$selectedVal = Array.prototype.filter
-                              .call($event.target.options, function(o) {
-                                return o.selected
-                              })
-                              .map(function(o) {
-                                var val = "_value" in o ? o._value : o.value
-                                return val
-                              })
-                            _vm.$set(
-                              item,
-                              "option",
-                              $event.target.multiple
-                                ? $$selectedVal
-                                : $$selectedVal[0]
-                            )
-                          }
-                        }
-                      },
-                      _vm._l(_vm.variants, function(variant) {
-                        return _c(
-                          "option",
-                          { domProps: { value: variant.id } },
-                          [
-                            _vm._v(
-                              "\n                                        " +
-                                _vm._s(variant.title) +
-                                "\n                                    "
-                            )
-                          ]
-                        )
-                      }),
-                      0
-                    )
-                  ])
-                ]),
-                _vm._v(" "),
-                _c("div", { staticClass: "col-md-8" }, [
-                  _c(
-                    "div",
-                    { staticClass: "form-group" },
-                    [
-                      _vm.product_variant.length != 1
-                        ? _c(
-                            "label",
-                            {
-                              staticClass: "float-right text-primary",
-                              staticStyle: { cursor: "pointer" },
-                              on: {
-                                click: function($event) {
-                                  _vm.product_variant.splice(index, 1)
-                                  _vm.checkVariant
-                                }
-                              }
-                            },
-                            [_vm._v("Remove")]
-                          )
-                        : _c("label", { attrs: { for: "" } }, [_vm._v(".")]),
-                      _vm._v(" "),
-                      _c("input-tag", {
-                        staticClass: "form-control",
-                        on: { input: _vm.checkVariant },
-                        model: {
-                          value: item.tags,
-                          callback: function($$v) {
-                            _vm.$set(item, "tags", $$v)
-                          },
-                          expression: "item.tags"
-                        }
-                      })
-                    ],
-                    1
-                  )
-                ])
-              ])
-            }),
-            0
-          ),
-          _vm._v(" "),
-          _vm.product_variant.length < _vm.variants.length &&
-          _vm.product_variant.length < 3
-            ? _c("div", { staticClass: "card-footer" }, [
-                _c(
-                  "button",
-                  {
-                    staticClass: "btn btn-primary",
-                    on: { click: _vm.newVariant }
-                  },
-                  [_vm._v("Add another option")]
-                )
-              ])
-            : _vm._e(),
-          _vm._v(" "),
           _c("div", { staticClass: "card-header text-uppercase" }, [
             _vm._v("Preview")
           ]),
@@ -51048,13 +51018,317 @@ var render = function() {
           _c("div", { staticClass: "card-body" }, [
             _c("div", { staticClass: "table-responsive" }, [
               _c("table", { staticClass: "table" }, [
-                _vm._m(2),
+                _vm._m(1),
                 _vm._v(" "),
                 _c(
                   "tbody",
-                  _vm._l(_vm.product_variant_prices, function(variant_price) {
-                    return _c("tr", [
-                      _c("td", [_vm._v(_vm._s(variant_price.title))]),
+                  _vm._l(_vm.product_variant_prices, function(
+                    variant_price,
+                    index
+                  ) {
+                    return _c("tr", { key: index }, [
+                      _c("td", [
+                        _c("div", [
+                          _c(
+                            "select",
+                            {
+                              directives: [
+                                {
+                                  name: "model",
+                                  rawName: "v-model",
+                                  value: variant_price.variant_id_one,
+                                  expression: "variant_price.variant_id_one"
+                                }
+                              ],
+                              on: {
+                                change: function($event) {
+                                  var $$selectedVal = Array.prototype.filter
+                                    .call($event.target.options, function(o) {
+                                      return o.selected
+                                    })
+                                    .map(function(o) {
+                                      var val =
+                                        "_value" in o ? o._value : o.value
+                                      return val
+                                    })
+                                  _vm.$set(
+                                    variant_price,
+                                    "variant_id_one",
+                                    $event.target.multiple
+                                      ? $$selectedVal
+                                      : $$selectedVal[0]
+                                  )
+                                }
+                              }
+                            },
+                            _vm._l(_vm.variants, function(variant) {
+                              return _c(
+                                "option",
+                                { domProps: { value: variant.id } },
+                                [
+                                  _vm._v(
+                                    "\n                                                " +
+                                      _vm._s(variant.title) +
+                                      "\n                                            "
+                                  )
+                                ]
+                              )
+                            }),
+                            0
+                          ),
+                          _vm._v(" "),
+                          _c(
+                            "select",
+                            {
+                              directives: [
+                                {
+                                  name: "model",
+                                  rawName: "v-model",
+                                  value: variant_price.product_variant_one,
+                                  expression:
+                                    "variant_price.product_variant_one"
+                                }
+                              ],
+                              on: {
+                                change: function($event) {
+                                  var $$selectedVal = Array.prototype.filter
+                                    .call($event.target.options, function(o) {
+                                      return o.selected
+                                    })
+                                    .map(function(o) {
+                                      var val =
+                                        "_value" in o ? o._value : o.value
+                                      return val
+                                    })
+                                  _vm.$set(
+                                    variant_price,
+                                    "product_variant_one",
+                                    $event.target.multiple
+                                      ? $$selectedVal
+                                      : $$selectedVal[0]
+                                  )
+                                }
+                              }
+                            },
+                            _vm._l(_vm.variant_details, function(variant_d) {
+                              return _c(
+                                "option",
+                                { domProps: { value: variant_d.id } },
+                                [
+                                  _vm._v(
+                                    "\n                                                " +
+                                      _vm._s(variant_d.variant) +
+                                      "\n                                            "
+                                  )
+                                ]
+                              )
+                            }),
+                            0
+                          )
+                        ]),
+                        _vm._v(" "),
+                        _c("br"),
+                        _vm._v(" "),
+                        _c("div", [
+                          _c(
+                            "select",
+                            {
+                              directives: [
+                                {
+                                  name: "model",
+                                  rawName: "v-model",
+                                  value: variant_price.variant_id_two,
+                                  expression: "variant_price.variant_id_two"
+                                }
+                              ],
+                              on: {
+                                change: function($event) {
+                                  var $$selectedVal = Array.prototype.filter
+                                    .call($event.target.options, function(o) {
+                                      return o.selected
+                                    })
+                                    .map(function(o) {
+                                      var val =
+                                        "_value" in o ? o._value : o.value
+                                      return val
+                                    })
+                                  _vm.$set(
+                                    variant_price,
+                                    "variant_id_two",
+                                    $event.target.multiple
+                                      ? $$selectedVal
+                                      : $$selectedVal[0]
+                                  )
+                                }
+                              }
+                            },
+                            _vm._l(_vm.variants, function(variant) {
+                              return _c(
+                                "option",
+                                { domProps: { value: variant.id } },
+                                [
+                                  _vm._v(
+                                    "\n                                               " +
+                                      _vm._s(variant.title) +
+                                      "\n                                            "
+                                  )
+                                ]
+                              )
+                            }),
+                            0
+                          ),
+                          _vm._v(" "),
+                          _c(
+                            "select",
+                            {
+                              directives: [
+                                {
+                                  name: "model",
+                                  rawName: "v-model",
+                                  value: variant_price.product_variant_two,
+                                  expression:
+                                    "variant_price.product_variant_two"
+                                }
+                              ],
+                              on: {
+                                change: function($event) {
+                                  var $$selectedVal = Array.prototype.filter
+                                    .call($event.target.options, function(o) {
+                                      return o.selected
+                                    })
+                                    .map(function(o) {
+                                      var val =
+                                        "_value" in o ? o._value : o.value
+                                      return val
+                                    })
+                                  _vm.$set(
+                                    variant_price,
+                                    "product_variant_two",
+                                    $event.target.multiple
+                                      ? $$selectedVal
+                                      : $$selectedVal[0]
+                                  )
+                                }
+                              }
+                            },
+                            _vm._l(_vm.variant_details, function(variant_d) {
+                              return _c(
+                                "option",
+                                { domProps: { value: variant_d.id } },
+                                [
+                                  _vm._v(
+                                    "\n                                               " +
+                                      _vm._s(variant_d.variant) +
+                                      "\n                                            "
+                                  )
+                                ]
+                              )
+                            }),
+                            0
+                          )
+                        ]),
+                        _vm._v(" "),
+                        _c("br"),
+                        _vm._v(" "),
+                        _c("div", [
+                          _c(
+                            "select",
+                            {
+                              directives: [
+                                {
+                                  name: "model",
+                                  rawName: "v-model",
+                                  value: variant_price.variant_id_three,
+                                  expression: "variant_price.variant_id_three"
+                                }
+                              ],
+                              on: {
+                                change: function($event) {
+                                  var $$selectedVal = Array.prototype.filter
+                                    .call($event.target.options, function(o) {
+                                      return o.selected
+                                    })
+                                    .map(function(o) {
+                                      var val =
+                                        "_value" in o ? o._value : o.value
+                                      return val
+                                    })
+                                  _vm.$set(
+                                    variant_price,
+                                    "variant_id_three",
+                                    $event.target.multiple
+                                      ? $$selectedVal
+                                      : $$selectedVal[0]
+                                  )
+                                }
+                              }
+                            },
+                            _vm._l(_vm.variants, function(variant) {
+                              return _c(
+                                "option",
+                                { domProps: { value: variant.id } },
+                                [
+                                  _vm._v(
+                                    "\n                                                " +
+                                      _vm._s(variant.title) +
+                                      "\n                                            "
+                                  )
+                                ]
+                              )
+                            }),
+                            0
+                          ),
+                          _vm._v(" "),
+                          _c(
+                            "select",
+                            {
+                              directives: [
+                                {
+                                  name: "model",
+                                  rawName: "v-model",
+                                  value: variant_price.product_variant_three,
+                                  expression:
+                                    "variant_price.product_variant_three"
+                                }
+                              ],
+                              on: {
+                                change: function($event) {
+                                  var $$selectedVal = Array.prototype.filter
+                                    .call($event.target.options, function(o) {
+                                      return o.selected
+                                    })
+                                    .map(function(o) {
+                                      var val =
+                                        "_value" in o ? o._value : o.value
+                                      return val
+                                    })
+                                  _vm.$set(
+                                    variant_price,
+                                    "product_variant_three",
+                                    $event.target.multiple
+                                      ? $$selectedVal
+                                      : $$selectedVal[0]
+                                  )
+                                }
+                              }
+                            },
+                            _vm._l(_vm.variant_details, function(variant_d) {
+                              return _c(
+                                "option",
+                                { domProps: { value: variant_d.id } },
+                                [
+                                  _vm._v(
+                                    "\n                                                " +
+                                      _vm._s(variant_d.variant) +
+                                      "\n                                            "
+                                  )
+                                ]
+                              )
+                            }),
+                            0
+                          )
+                        ])
+                      ]),
                       _vm._v(" "),
                       _c("td", [
                         _c("input", {
@@ -51110,10 +51384,35 @@ var render = function() {
                             }
                           }
                         })
+                      ]),
+                      _vm._v(" "),
+                      _c("td", [
+                        _c(
+                          "button",
+                          {
+                            on: {
+                              click: function($event) {
+                                return _vm.delVarient(index)
+                              }
+                            }
+                          },
+                          [_vm._v("x")]
+                        )
                       ])
                     ])
                   }),
                   0
+                )
+              ]),
+              _vm._v(" "),
+              _c("div", [
+                _c(
+                  "button",
+                  {
+                    staticClass: "btn btn-info",
+                    on: { click: _vm.addVarient }
+                  },
+                  [_vm._v("Add Varients")]
                 )
               ])
             ])
@@ -51161,30 +51460,15 @@ var staticRenderFns = [
     var _vm = this
     var _h = _vm.$createElement
     var _c = _vm._self._c || _h
-    return _c(
-      "div",
-      {
-        staticClass:
-          "card-header py-3 d-flex flex-row align-items-center justify-content-between"
-      },
-      [
-        _c("h6", { staticClass: "m-0 font-weight-bold text-primary" }, [
-          _vm._v("Variants")
-        ])
-      ]
-    )
-  },
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
     return _c("thead", [
       _c("tr", [
         _c("td", [_vm._v("Variant")]),
         _vm._v(" "),
         _c("td", [_vm._v("Price")]),
         _vm._v(" "),
-        _c("td", [_vm._v("Stock")])
+        _c("td", [_vm._v("Stock")]),
+        _vm._v(" "),
+        _c("td")
       ])
     ])
   }

@@ -9,6 +9,6 @@
         @php
         $url = json_encode(['url'=>url('/')]);
         @endphp
-        <create-product :base_url="{{$url}}" :variants="{{ $variants }}">Loading</create-product>
+        <create-product :base_url="{{$url}}" :variants="{{ $variants }}" :variant_details="{{$variant_details->toJson()}}">Loading</create-product>
     </div>
 @endsection

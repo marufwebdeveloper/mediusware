@@ -21,7 +21,7 @@ class ProductController extends Controller
     {
 
 
-        $perpage = 3;
+        $perpage = 5;
         $data['products'] = $this->SearchProduct()?:Product::orderBy('id','desc')->paginate($perpage);
         $data['products_count'] = Product::count();
         $data['productper_page'] = $perpage; 
@@ -57,7 +57,9 @@ class ProductController extends Controller
     public function create()
     {
         $variants = Variant::all();
-        return view('products.create', compact('variants'));
+        $variant_details = DB::table('product_variants')
+        ->get();
+        return view('products.create', compact('variants','variant_details'));
     }
 
     /**
@@ -67,9 +69,38 @@ class ProductController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
     public function store(Request $request)
-    {
-        $success = Product::create($request->all());
-        if($success)echo 1;
+    { 
+        $validatedData = $request->validate([
+            'title' => 'required|max:255',
+            'sku' => 'required|unique:products'
+        ]);
+
+        $storeProduct = Product::create($request->all());
+
+        if($storeProduct->id){            
+            $varients = [];
+
+            foreach ($request['product_variant_prices'] as $key => $value) {
+                $value['product_id'] = $storeProduct->id;
+                if($varientData = $this->PrepareNewVarients($value))
+                $varients[] = $varientData;
+            }
+            if($varients){
+                DB::table('product_variant_prices')->insert($varients);
+            } 
+            ////
+            $storeImage = [];
+            foreach($request['product_image'] as $image){
+                $storeImage[]=[
+                    'product_id' => $storeProduct->id,
+                    'file_path' => $image
+                ];
+            }
+            if($storeImage){
+                DB::table('product_images')->insert($storeImage);
+            }
+        }
+        if($storeProduct)echo 1;
         Session::flash('success', 'Data stored successfully');
     }
 

@@ -182,8 +182,6 @@ export default {
             if(response && response.xhr.response){
                 this.images.push(response.xhr.response)
             }
-            
-            
         },
         vdropzone_removed_file(a,b,c){
             var image_name = '';
@@ -312,14 +310,9 @@ export default {
         this.product_sku = this.product.sku;
         this.description = this.product.description;
         this.product_variant_prices = this.product_variants;
-        this.images = this.parseImages();     
+        this.images = this.parseImages();  
 
-
-        console.log(this.base_url);   
-
-        console.log(this.base_url.url+'/product/'+this.product.id);   
-
-        
+        setTimeout(function(){console.clear()},1000);      
     }
 }
 </script>
