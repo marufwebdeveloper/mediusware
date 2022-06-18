@@ -6,8 +6,10 @@
     </div>
     <div id="app">
         @php
-        $url = json_encode(['url'=>url('/')]);
+        $url = json_encode([
+            'url'=>url('/')
+        ]);
         @endphp
-        <edit-product :base_url="{{$url}}" :variants="{{ $variants }}" :product="{{$product->toJson()}}" :product_variants="{{$product_variant->toJson()}}" :variant_details="{{$variant_details->toJson()}}">Loading</edit-product>
+        <edit-product :base_url="{{$url}}" :variants="{{ $variants }}" :product="{{$product->toJson()}}" :product_variants="{{$product_variant->toJson()}}" :variant_details="{{$variant_details->toJson()}}" :product_images="{{$images->toJson()}}">Loading</edit-product>
     </div>
 @endsection

@@ -101,17 +101,24 @@ class ProductController extends Controller
         ->where('product_variant_prices.product_id',$product->id)
         ->select('product_variant_prices.*',
             'variant_one.variant as variant_one',
-            'variant_two.variant as variant_two',
-            'variant_three.variant as variant_three',
             'variant_one.variant_id as variant_id_one',
+
+            'variant_two.variant as variant_two',
             'variant_two.variant_id as variant_id_two',
+
+            'variant_three.variant as variant_three',
             'variant_three.variant_id as variant_id_three'
         )
         ->get(); 
+
         $variant_details = DB::table('product_variants')
         ->get(); 
+
+        $images = DB::table('product_images')
+        ->where('product_id',$product->id)
+        ->get(); 
         
-        return view('products.edit', compact('variants','product','product_variant','variant_details'));
+        return view('products.edit', compact('variants','product','product_variant','variant_details','images'));
     }
 
     /**
@@ -123,6 +130,8 @@ class ProductController extends Controller
      */
     public function update(Request $request, $product_id)
     {
+
+
         $success = Product::where('id', $product_id)
         ->update([
             'title' => $request['title'],
@@ -130,17 +139,52 @@ class ProductController extends Controller
             'description' => $request['description']
         ]);
 
+        $getVarientIds = array_column(DB::table('product_variant_prices')
+        ->where('product_id',$product_id)
+        ->select('id')
+        ->get()->toArray(),'id');
+
+        $newVarients = [];
+
         foreach ($request['product_variant_prices'] as $key => $value) {
-            DB::table('product_variant_prices')
-            ->where('id', $value['id'])
-            ->update([
-                'product_variant_one' => $value['product_variant_one'],
-                'product_variant_two' => $value['product_variant_two'],
-                'product_variant_three' => $value['product_variant_three'],
-                'price' => $value['price'],
-                'stock' => $value['stock']                
-            ]);
+
+            if(!$value['id']){
+                $varientData = $this->PrepareNewVarients($value);
+                if($varientData)
+                $newVarients[] = $varientData;
+            }
+
+            if(in_array($value['id'], $getVarientIds)){
+
+                if (($key = array_search($value['id'], $getVarientIds)) !== false) {
+                    unset($getVarientIds[$key]);
+                }
+
+                DB::table('product_variant_prices')
+                ->where('id', $value['id'])
+                ->update([
+                    'product_variant_one' => $value['product_variant_one'],
+                    'product_variant_two' => $value['product_variant_two'],
+                    'product_variant_three' => $value['product_variant_three'],
+                    'price' => $value['price'],
+                    'stock' => $value['stock']                
+                ]);
+            }     
         }
+
+        if($getVarientIds){
+            DB::table('product_variant_prices')
+        ->whereIn('id', $getVarientIds)
+        ->delete();
+        }
+        
+
+        if($newVarients){
+            DB::table('product_variant_prices')->insert($newVarients);
+        }  
+
+        $this->StoreImages($request['product_image'],$product_id);
+
         echo $success;
         Session::flash('success', 'Data updated successfully');
     }
@@ -154,6 +198,20 @@ class ProductController extends Controller
     public function destroy(Product $product)
     {
         //
+    }
+
+    public function ImageUpload(Request $request)
+    {
+        if($request->file('file')){
+            $imageName = time().rand(1111,9999).'.'.$request->file->getClientOriginalExtension();
+            $request->file->move(public_path('product-images'), $imageName);
+              
+            //return response()->json(['success'=>'We have successfully upload file.']);
+
+            echo $imageName;
+
+
+        }
     }
 
 
@@ -198,6 +256,63 @@ class ProductController extends Controller
             return DB::table('products')->whereIn('id',$ids)->get();
         }
         
+    }
+
+
+    private function PrepareNewVarients($data){
+        $varientData = [];
+        if(
+            (
+                $data['product_variant_one'] ||
+                $data['product_variant_two'] ||
+                $data['product_variant_three']
+            ) && $data['price'] && $data['stock']
+        ){
+
+            $varientData = [
+                'product_variant_one' => $data['product_variant_one'],
+                'product_variant_two' => $data['product_variant_two'],
+                'product_variant_three' => $data['product_variant_three'],
+                'price' => $data['price'],
+                'stock' => $data['stock'],
+                'product_id' => $data['product_id']
+                
+            ];
+        }
+        return $varientData;
+    }
+
+    private function StoreImages($images,$product_id){
+        $get_images = DB::table('product_images')
+        ->where('product_id',$product_id)
+        ->get(); 
+
+        $imageNames = array_column($get_images->toArray(),'file_path'); 
+
+        $deletedImages = [];
+        foreach($get_images as $img){
+            if(!in_array($img->file_path,$images)){
+
+                $deletedImages[] = $img->id;
+            }
+        }
+        if($deletedImages){
+            DB::table('product_images')
+                ->whereIn('id', $deletedImages)
+                ->delete();
+        }
+        
+        $storeImage = [];
+        foreach($images as $image){
+            if(in_array($image,$imageNames)) continue;
+            $storeImage[]=[
+                'product_id' => $product_id,
+                'file_path' => $image
+            ];
+        }
+        if($storeImage){
+            DB::table('product_images')->insert($storeImage);
+        }
     }
 
 

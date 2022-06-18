@@ -24,7 +24,7 @@
                         <h6 class="m-0 font-weight-bold text-primary">Media</h6>
                     </div>
                     <div class="card-body border">
-                        <vue-dropzone ref="myVueDropzone" id="dropzone" :options="dropzoneOptions"></vue-dropzone>
+                        <vue-dropzone ref="myVueDropzone" id="dropzone" :options="dropzoneOptions"  @vdropzone-complete="vdropzone_complete" @vdropzone-removed-file="vdropzone_removed_file" @vdropzone-mounted='vdropzone_mounted'></vue-dropzone>
                     </div>
                 </div>
             </div>
@@ -47,7 +47,7 @@
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <tr v-for="variant_price in product_variant_prices">
+                                <tr v-for="(variant_price,index) in product_variant_prices" :key="index">
                                     <td>
                                         <div>
                                             <select v-model="variant_price.variant_id_one">
@@ -102,11 +102,14 @@
                                         <input type="text" class="form-control" v-model="variant_price.stock">
                                     </td>
                                     <td>
-                                        <a href='#'>x</a>
+                                        <button @click="delVarient(index)">x</button>
                                     </td>
                                 </tr>
                                 </tbody>
                             </table>
+                            <div>   
+                                <button @click="addVarient" class="btn btn-info">Add Varients</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -149,7 +152,10 @@ export default {
             type: Object,
             required:true
         },
-        
+        product_images:{
+            type: Object,
+            required:true
+        }
 
     },
     data() {
@@ -161,14 +167,48 @@ export default {
             images: [],
             product_variant_prices: [],
             dropzoneOptions: {
-                url: 'https://httpbin.org/post',
+                url: this.base_url.url+'/product-image-upload',
                 thumbnailWidth: 150,
                 maxFilesize: 0.5,
-                headers: {"My-Awesome-Header": "header value"}
+                headers: {
+                    "X-CSRF-TOKEN": document.head.querySelector("[name=csrf-token]").content
+                },
+                addRemoveLinks: true
             }
         }
     },
     methods: {
+        vdropzone_complete(response) {
+            if(response && response.xhr.response){
+                this.images.push(response.xhr.response)
+            }
+            
+            
+        },
+        vdropzone_removed_file(a,b,c){
+            var image_name = '';
+            if(a.xhr){
+                image_name = a.xhr.response;
+            }else if(a.name){
+                image_name = a.name;
+            }
+            if(image_name){
+                var index = this.images.indexOf(image_name);
+                this.images.splice(index, 1);
+            }
+        },
+        vdropzone_mounted(){
+            var imgs = this.parseImages();
+            for(var i=0;i<imgs.length;i++){
+                var file = { 
+                    size: 150,
+                    name: imgs[i],
+                    //type: "image/png" 
+                };
+                var url = this.base_url.url+"/product-images/"+imgs[i];
+                this.$refs.myVueDropzone.manuallyAddFile(file, url);
+            }
+        },
         // it will push a new object into product variant
         newVariant() {
             let all_variants = this.variants.map(el => el.id)
@@ -221,26 +261,64 @@ export default {
                 product_image: this.images,
                 product_variant_prices: this.product_variant_prices
             }
+
             axios.put(this.base_url.url+'/product/'+this.product.id, product).then(response => {
 
                 console.log(response.data);
 
                  if(response.data==1){
-                    window.location.href="/mediusware/public/product";
+                    window.location.href=this.base_url.url+'/product';
                  }
             }).catch(error => {
                 console.log(error);
             })
+        },
+        addVarient(){
+            this.product_variant_prices.push({
+                created_at: '',
+                id: '',
+                price: '',
+                product_id:this.product.id ,
+                product_variant_one: '',
+                product_variant_three: '',
+                product_variant_two: '',
+                stock: '',
+                updated_at: '',
+                variant_id_one: '',
+                variant_id_three: '',
+                variant_id_two: '',
+                variant_one: '',
+                variant_three: '',
+                variant_two: ''
+            });
+        },
+        delVarient:function(index){ 
+            if (confirm('Are you sure?') == true) {
+               this.product_variant_prices.splice(index, 1);
+            }           
+             
+        },
+        parseImages(){
+            var images = [];
+            for(var i=0;i<this.product_images.length;i++){
+                images.push(this.product_images[i]['file_path'])
+            }
+            return images;
         }
+        
     },
     mounted() {
         this.product_name = this.product.title;
         this.product_sku = this.product.sku;
         this.description = this.product.description;
         this.product_variant_prices = this.product_variants;
+        this.images = this.parseImages();     
 
 
-        console.log(this.base_url);
+        console.log(this.base_url);   
+
+        console.log(this.base_url.url+'/product/'+this.product.id);   
+
         
     }
 }

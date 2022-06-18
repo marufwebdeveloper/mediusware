@@ -2265,6 +2265,9 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
 
 
 
@@ -2293,6 +2296,10 @@ __webpack_require__.r(__webpack_exports__);
     variant_details: {
       type: Object,
       required: true
+    },
+    product_images: {
+      type: Object,
+      required: true
     }
   },
   data: function data() {
@@ -2303,16 +2310,49 @@ __webpack_require__.r(__webpack_exports__);
       images: [],
       product_variant_prices: [],
       dropzoneOptions: {
-        url: 'https://httpbin.org/post',
+        url: this.base_url.url + '/product-image-upload',
         thumbnailWidth: 150,
         maxFilesize: 0.5,
         headers: {
-          "My-Awesome-Header": "header value"
-        }
+          "X-CSRF-TOKEN": document.head.querySelector("[name=csrf-token]").content
+        },
+        addRemoveLinks: true
       }
     };
   },
   methods: {
+    vdropzone_complete: function vdropzone_complete(response) {
+      if (response && response.xhr.response) {
+        this.images.push(response.xhr.response);
+      }
+    },
+    vdropzone_removed_file: function vdropzone_removed_file(a, b, c) {
+      var image_name = '';
+
+      if (a.xhr) {
+        image_name = a.xhr.response;
+      } else if (a.name) {
+        image_name = a.name;
+      }
+
+      if (image_name) {
+        var index = this.images.indexOf(image_name);
+        this.images.splice(index, 1);
+      }
+    },
+    vdropzone_mounted: function vdropzone_mounted() {
+      var imgs = this.parseImages();
+
+      for (var i = 0; i < imgs.length; i++) {
+        var file = {
+          size: 150,
+          name: imgs[i] //type: "image/png" 
+
+        };
+        var url = this.base_url.url + "/product-images/" + imgs[i];
+        this.$refs.myVueDropzone.manuallyAddFile(file, url);
+      }
+    },
     // it will push a new object into product variant
     newVariant: function newVariant() {
       var all_variants = this.variants.map(function (el) {
@@ -2365,6 +2405,8 @@ __webpack_require__.r(__webpack_exports__);
     },
     // store product into database
     saveProduct: function saveProduct() {
+      var _this2 = this;
+
       var product = {
         title: this.product_name,
         sku: this.product_sku,
@@ -2376,11 +2418,44 @@ __webpack_require__.r(__webpack_exports__);
         console.log(response.data);
 
         if (response.data == 1) {
-          window.location.href = "/mediusware/public/product";
+          window.location.href = _this2.base_url.url + '/product';
         }
       })["catch"](function (error) {
         console.log(error);
       });
+    },
+    addVarient: function addVarient() {
+      this.product_variant_prices.push({
+        created_at: '',
+        id: '',
+        price: '',
+        product_id: this.product.id,
+        product_variant_one: '',
+        product_variant_three: '',
+        product_variant_two: '',
+        stock: '',
+        updated_at: '',
+        variant_id_one: '',
+        variant_id_three: '',
+        variant_id_two: '',
+        variant_one: '',
+        variant_three: '',
+        variant_two: ''
+      });
+    },
+    delVarient: function delVarient(index) {
+      if (confirm('Are you sure?') == true) {
+        this.product_variant_prices.splice(index, 1);
+      }
+    },
+    parseImages: function parseImages() {
+      var images = [];
+
+      for (var i = 0; i < this.product_images.length; i++) {
+        images.push(this.product_images[i]['file_path']);
+      }
+
+      return images;
     }
   },
   mounted: function mounted() {
@@ -2388,7 +2463,9 @@ __webpack_require__.r(__webpack_exports__);
     this.product_sku = this.product.sku;
     this.description = this.product.description;
     this.product_variant_prices = this.product_variants;
+    this.images = this.parseImages();
     console.log(this.base_url);
+    console.log(this.base_url.url + '/product/' + this.product.id);
   }
 });
 
@@ -51227,7 +51304,12 @@ var render = function() {
             [
               _c("vue-dropzone", {
                 ref: "myVueDropzone",
-                attrs: { id: "dropzone", options: _vm.dropzoneOptions }
+                attrs: { id: "dropzone", options: _vm.dropzoneOptions },
+                on: {
+                  "vdropzone-complete": _vm.vdropzone_complete,
+                  "vdropzone-removed-file": _vm.vdropzone_removed_file,
+                  "vdropzone-mounted": _vm.vdropzone_mounted
+                }
               })
             ],
             1
@@ -51246,8 +51328,11 @@ var render = function() {
                 _vm._v(" "),
                 _c(
                   "tbody",
-                  _vm._l(_vm.product_variant_prices, function(variant_price) {
-                    return _c("tr", [
+                  _vm._l(_vm.product_variant_prices, function(
+                    variant_price,
+                    index
+                  ) {
+                    return _c("tr", { key: index }, [
                       _c("td", [
                         _c("div", [
                           _c(
@@ -51607,10 +51692,33 @@ var render = function() {
                         })
                       ]),
                       _vm._v(" "),
-                      _vm._m(3, true)
+                      _c("td", [
+                        _c(
+                          "button",
+                          {
+                            on: {
+                              click: function($event) {
+                                return _vm.delVarient(index)
+                              }
+                            }
+                          },
+                          [_vm._v("x")]
+                        )
+                      ])
                     ])
                   }),
                   0
+                )
+              ]),
+              _vm._v(" "),
+              _c("div", [
+                _c(
+                  "button",
+                  {
+                    staticClass: "btn btn-info",
+                    on: { click: _vm.addVarient }
+                  },
+                  [_vm._v("Add Varients")]
                 )
               ])
             ])
@@ -51686,12 +51794,6 @@ var staticRenderFns = [
         _c("td")
       ])
     ])
-  },
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("td", [_c("a", { attrs: { href: "#" } }, [_vm._v("x")])])
   }
 ]
 render._withStripped = true
